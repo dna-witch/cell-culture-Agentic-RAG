@@ -1,4 +1,4 @@
-# Cell Culture RAG
+# Cell Culture Wizard (RAG)
 
 ## Intro
 This is a RAG-enabled LLM application that acts as an expert on cell culture techniques and knowledge.
