@@ -8,20 +8,45 @@ This script will specifically crawl the ATCC website
 using the URLs in this sitemap: https://www.atcc.org/sitemap.xml
 """
 import os
+import sys
+import json
 import requests
 import asyncio
+
+from dotenv import load_dotenv
+load_dotenv()
 
 __location__ = os.path.dirname(os.path.abspath(__file__))
 __base_dir__ = os.path.dirname(os.path.dirname(__location__))
 __output__ = os.path.join(__base_dir__, 'data', 'raw', 'web_crawled')
 
 from typing import List
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+from xml.etree import ElementTree as ET
 
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
-from xml.etree import ElementTree as ET
+import torch
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.text_splitter import MarkdownTextSplitter
+from langchain.llms import HuggingFacePipeline
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+
+from supabase import create_client, Client
+
+from chunker import ProcessedChunk, split_text_into_chunks, get_title_and_summary, create_vector_embedding, process_chunk, store_chunk_in_supabase, process_and_store_document
+
+# Initialize the Supabase client
+supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_SERVICE_KEY")
+)
 
 async def crawl_sequential(urls: List[str]):
     # Configure the crawler
