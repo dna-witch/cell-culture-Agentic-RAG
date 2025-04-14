@@ -1,33 +1,15 @@
 """
-This script is designed to sequentially crawl through multiple URLs from the `sitemap.xml` 
+This script is designed to crawl through multiple URLs from the `sitemap.xml` 
 and extract the relevant content from each page.
 It uses the `crawl4ai` library to perform the crawling and content extraction.
 The script is asynchronous and can handle multiple URLs concurrently.
 
 This script will specifically crawl the ATCC website 
 using the URLs in this sitemap: https://www.atcc.org/sitemap.xml
-
-The URLs of interest are:
-
-"resources/" 
-+ "application-notes"
-+ "culture-guides"
-+ "microbial-media-formulations"
-+ "product-sheets"
-+ "safety-data-sheets"
-+ "technical-documents"
-+ "white-papers"
-
-"applications/"
-
-"cell-products/"
-
-"the-science/"
-+ "genetic-engineering"
-+ "culturing-cells"
-
 """
 import os
+import sys
+import psutil
 import requests
 import asyncio
 
