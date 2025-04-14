@@ -48,25 +48,31 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_SERVICE_KEY")
 )
 
-async def crawl_sequential(urls: List[str]):
+async def crawl_parallel(urls: List[str], max_concurrent: int = 5):
+    """
+    Asynchronously crawl multiple URLs in parallel, with a limit on concurrent requests.
+    
+    Args:
+        urls (List[str]): List of URLs to crawl.
+        max_concurrent (int): Maximum number of concurrent requests.
+
+    Returns:
+        None
+    """
     # Configure the crawler
     browser_config = BrowserConfig(
         headless=True,  # Run in headless mode
         browser_type='chrome'  # Use Chrome browser
-        # # Add any other browser-specific configurations here
     )
 
     run_config = CrawlerRunConfig(
-        # max_depth=3,  # Maximum depth of crawling
-        # max_pages=100,  # Maximum number of pages to crawl
-        # Add any other run-specific configurations here
         word_count_threshold=10,  # Minimum word count for content extraction
         excluded_tags=['form', 'header', 'footer'],  # Tags to exclude from content extraction
         exclude_external_links=True,  # Exclude external links
         remove_overlay_elements=True,  # Remove overlay elements from content
 
         # Cache control
-        cache_mode=CacheMode.ENABLED,  # Enable caching, if available
+        cache_mode=CacheMode.BYPASS,  # Enable caching, if available
         markdown_generator=DefaultMarkdownGenerator()  # Use the default markdown generator
     )
 
@@ -75,19 +81,24 @@ async def crawl_sequential(urls: List[str]):
         
         try:
             session_id = "session1"  # Reuse same session for all URLs
+            # Create a semaphore to limit the number of concurrent requests
+            semaphore = asyncio.Semaphore(max_concurrent)
+
+            async def crawl_url(url: str):
+                async with semaphore:
+                    result = await crawler.arun(
+                        url=url,
+                        config=run_config,
+                        session_id=session_id  # Reuse the session ID
+                    )
+                    if result.success:
+                        print(f"Successfully crawled {url}")
+                        await process_and_store_document(url, result.markdown.raw_markdown)
+                    else:
+                        print(f"Failed to crawl {url}: {result.error_message}")
+                        print(f"Status Code: {result.status_code}")
             
-            for url in urls:
-                result = await crawler.arun(
-                    url=url,
-                    config=run_config,
-                    session_id=session_id  # Reuse the session ID
-                )
-                if result.success:
-                    print(f"Successfully crawled {url}")
-                    print(f"Markdown length: {len(result.markdown.raw_markdown)}")
-                else:
-                    print(f"Failed to crawl {url}: {result.error_message}")
-                    print(f"Status Code: {result.status_code}")
+            await asyncio.gather(*[crawl_url(url) for url in urls])
         finally:
             await crawler.close()  # Close the crawler and browser after all URLs are processed
     
@@ -188,7 +199,7 @@ async def main():
     relevant_urls = [url for url in urls if check_url_relevance(url, source='atcc')]
     
     if relevant_urls:
-        await crawl_sequential(relevant_urls)
+        await crawl_parallel(relevant_urls)
     else:
         print("No relevant URLs found for crawling.")
 
