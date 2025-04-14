@@ -12,6 +12,7 @@ import sys
 import json
 import requests
 import asyncio
+import hashlib
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -32,9 +33,9 @@ from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import MarkdownTextSplitter
-from langchain.llms import HuggingFacePipeline
+from langchain_community.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
@@ -62,29 +63,36 @@ async def crawl_parallel(urls: List[str], max_concurrent: int = 5):
     # Configure the crawler
     browser_config = BrowserConfig(
         headless=True,  # Run in headless mode
-        browser_type='chrome'  # Use Chrome browser
-    )
+        browser_type='chromium',
+        extra_args=["--disable-dev-shm-usage", "--no-sandbox"]
+        )
+
 
     run_config = CrawlerRunConfig(
         word_count_threshold=10,  # Minimum word count for content extraction
-        excluded_tags=['form', 'header', 'footer'],  # Tags to exclude from content extraction
+        excluded_tags=['form', 'header', 'footer', 'nav'],  # Tags to exclude from content extraction
         exclude_external_links=True,  # Exclude external links
         remove_overlay_elements=True,  # Remove overlay elements from content
 
         # Cache control
         cache_mode=CacheMode.BYPASS,  # Enable caching, if available
-        markdown_generator=DefaultMarkdownGenerator()  # Use the default markdown generator
+        markdown_generator=DefaultMarkdownGenerator(),  # Use the default markdown generator
+        # wait_for_timeout=5000,  # Wait for 5 seconds before extracting content
+        # wait_until='networkidle'  # Wait until the network is idle before extracting content
     )
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
         await crawler.start()  # Start the crawler
         
         try:
-            session_id = "session1"  # Reuse same session for all URLs
+            # url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+            # session_id = f"session_{url_hash}"  # Reuse same session for all URLs
             # Create a semaphore to limit the number of concurrent requests
             semaphore = asyncio.Semaphore(max_concurrent)
 
             async def crawl_url(url: str):
+                url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+                session_id = f"session_{url_hash}"
                 async with semaphore:
                     result = await crawler.arun(
                         url=url,
@@ -175,7 +183,6 @@ def check_url_relevance(url: str, source='atcc') -> bool:
 
     if source=='atcc':
         atcc_keywords = [
-            "resources/application-notes",
             "resources/culture-guides",
             "resources/microbial-media-formulations",
             "resources/product-sheets",

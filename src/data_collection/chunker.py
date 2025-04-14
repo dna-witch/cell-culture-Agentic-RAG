@@ -27,14 +27,22 @@ from urllib.parse import urlparse
 import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 from langchain.embeddings import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer  # Remove if not used
+from langchain_community.embeddings import HuggingFaceEmbeddings  # Remove if not used
 from langchain.text_splitter import MarkdownTextSplitter
-from langchain.llms import HuggingFacePipeline
+from langchain_community.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
 from xml.etree import ElementTree as ET  # Remove if not used
 
 from supabase import create_client, Client
+
+# Initialize global variables for models and tokenizers
+# These will be loaded only once to save memory and time
+model = None
+tokenizer = None
+embedding_model = SentenceTransformer('intfloat/e5-base')
 
 # Initialize the Supabase client
 supabase: Client = create_client(
@@ -46,8 +54,8 @@ supabase: Client = create_client(
 class ProcessedChunk:
     url: str
     chunk_id: int
-    title: str
-    summary: str
+    # title: str
+    # summary: str
     content: str
     metadata: Dict[str, Any]
     embedding: List[float]
@@ -66,53 +74,51 @@ def split_text_into_chunks(text: str, chunk_size: int = 1280, chunk_overlap: int
     """
     text_splitter = MarkdownTextSplitter(chunk_size=chunk_size, 
                                          chunk_overlap=chunk_overlap, # 100 characters overlap
-                                         headers_to_split_on=[("#", "header1"),
-                                                              ("##", "header2")]
-                                        )  
+                                        )
     chunks = text_splitter.split_text(text)
     return chunks
     
-async def get_title_and_summary(chunk: str) -> Dict[str, str]:
-    """
-    Extracts the title and summary from the chunk.
+# async def get_title_and_summary(chunk: str) -> Dict[str, str]:
+#     """
+#     Extracts the title and summary from the chunk.
 
-    Args:
-        chunk (str): The text chunk.
+#     Args:
+#         chunk (str): The text chunk.
         
-    Returns:
-        Dict[str, str]: A dictionary containing the title and summary.
-    """
+#     Returns:
+#         Dict[str, str]: A dictionary containing the title and summary.
+#     """
+#     global model, tokenizer
+#     # Only load the model and tokenizer once
+#     if model is None or tokenizer is None:
+#         model_name = "google/flan-t5-small"  # ~300MB model. If it doesn't work, try "facebook/bart-large-cnn" (~400MB)
+#         tokenizer = AutoTokenizer.from_pretrained(model_name)
+#         model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
-    # Only load the model and tokenizer once
-    if model is None or tokenizer is None:
-        model_name = "google/flan-t5-small"  # ~300MB model. If it doesn't work, try "facebook/bart-large-cnn" (~400MB)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+#     # Create the pipeline
+#     pipe = pipeline(
+#         "summarization",  # Task: text2text-generation or summarization
+#         model=model,
+#         tokenizer=tokenizer,
+#         max_length=250,
+#         device=0 if torch.cuda.is_available() else -1
+#     )
 
-    # Create the pipeline
-    pipe = pipeline(
-        "text2text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_length=250,
-        device=0 if torch.cuda.is_available() else -1
-    )
+#     # Title: prompt template and chain
+#     title_prompt = PromptTemplate(input_variables=["text"],
+#                                   template="If this seems like the start of a document or a chapter, extract the title. Otherwise, derive a short descriptive title. \n\n{text} \n\nTitle:")
+#     title_chain = LLMChain(llm=HuggingFacePipeline(pipeline=pipe), prompt=title_prompt)
 
-    # Title: prompt template and chain
-    title_prompt = PromptTemplate(input_variables=["text"],
-                                  template="If this seems like the start of a document or a chapter, extract the title. Otherwise, derive a short descriptive title. \n\n{text} \n\nTitle:")
-    title_chain = LLMChain(llm=HuggingFacePipeline(pipeline=pipe), prompt=title_prompt)
+#     # Summary: prompt template and chain
+#     summary_prompt = PromptTemplate(input_variables=["text"],
+#                                     template="Summarize the main points of the following text in 3-5 sentences. \n\n{text} \n\nSummary:")
+#     summary_chain = LLMChain(llm=HuggingFacePipeline(pipeline=pipe), prompt=summary_prompt)
 
-    # Summary: prompt template and chain
-    summary_prompt = PromptTemplate(input_variables=["text"],
-                                    template="Summarize the main points of the following text in 3-5 sentences. \n\n{text} \n\nSummary:")
-    summary_chain = LLMChain(llm=HuggingFacePipeline(pipeline=pipe), prompt=summary_prompt)
-
-    # Run the chains
-    title = await title_chain.arun(chunk)
-    summary = await summary_chain.arun(chunk)
+#     # Run the chains
+#     title = await title_chain.arun(chunk)
+#     summary = await summary_chain.arun(chunk)
     
-    return {"title": title, "summary": summary}
+#     return {"title": title, "summary": summary}
 
 async def create_vector_embedding(text: str) -> List[float]:
     """
@@ -126,8 +132,9 @@ async def create_vector_embedding(text: str) -> List[float]:
         List[float]: A list representing the vector embedding.
     """
     # Only load the model once
+    global embedding_model
     if embedding_model is None:
-        embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",
+        embedding_model = HuggingFaceEmbeddings(model_name="Jaume/gemma-2b-embeddings",
                                                 model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
                                                 encode_kwargs={"normalize_embeddings": True})  # Cosine similarity works better with normalized embeddings
     
@@ -148,8 +155,8 @@ async def process_chunk(chunk: str, chunk_id: int, url: str) -> ProcessedChunk:
     Returns:
         ProcessedChunk: An object containing the processed chunk data.
     """
-    # Extract title and summary
-    title_summary = await get_title_and_summary(chunk)
+    # # Extract title and summary
+    # title_summary = await get_title_and_summary(chunk)
     
     # Create vector embedding
     embedding = await create_vector_embedding(chunk)
@@ -166,8 +173,8 @@ async def process_chunk(chunk: str, chunk_id: int, url: str) -> ProcessedChunk:
     return ProcessedChunk(
         url=url,
         chunk_id=chunk_id,
-        title=title_summary["title"],
-        summary=title_summary["summary"],
+        # title=title_summary["title"],
+        # summary=title_summary["summary"],
         content=chunk,
         metadata=metadata,
         embedding=embedding
@@ -182,8 +189,8 @@ async def store_chunk_in_supabase(chunk: ProcessedChunk) -> None:
         data = {
             "url": chunk.url,
             "chunk_id": chunk.chunk_id,
-            "title": chunk.title,
-            "summary": chunk.summary,
+            # "title": chunk.title,
+            # "summary": chunk.summary,
             "content": chunk.content,
             "metadata": chunk.metadata,
             "embedding": chunk.embedding
