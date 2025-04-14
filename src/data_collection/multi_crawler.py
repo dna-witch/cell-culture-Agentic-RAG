@@ -6,26 +6,6 @@ The script is asynchronous and can handle multiple URLs concurrently.
 
 This script will specifically crawl the ATCC website 
 using the URLs in this sitemap: https://www.atcc.org/sitemap.xml
-
-The URLs of interest are:
-
-"resources/" 
-+ "application-notes"
-+ "culture-guides"
-+ "microbial-media-formulations"
-+ "product-sheets"
-+ "safety-data-sheets"
-+ "technical-documents"
-+ "white-papers"
-
-"applications/"
-
-"cell-products/"
-
-"the-science/"
-+ "genetic-engineering"
-+ "culturing-cells"
-
 """
 import os
 import requests
@@ -46,15 +26,11 @@ from xml.etree import ElementTree as ET
 async def crawl_sequential(urls: List[str]):
     # Configure the crawler
     browser_config = BrowserConfig(
-        headless=True,  # Run in headless mode
-        browser_type='chrome'  # Use Chrome browser
-        # # Add any other browser-specific configurations here
-    )
+        headless=True,
+        browser_type='chrome'
+        )
 
     run_config = CrawlerRunConfig(
-        # max_depth=3,  # Maximum depth of crawling
-        # max_pages=100,  # Maximum number of pages to crawl
-        # Add any other run-specific configurations here
         word_count_threshold=10,  # Minimum word count for content extraction
         excluded_tags=['form', 'header', 'footer'],  # Tags to exclude from content extraction
         exclude_external_links=True,  # Exclude external links
@@ -63,7 +39,7 @@ async def crawl_sequential(urls: List[str]):
         # Cache control
         cache_mode=CacheMode.ENABLED,  # Enable caching, if available
         markdown_generator=DefaultMarkdownGenerator()  # Use the default markdown generator
-    )
+        )
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
         await crawler.start()  # Start the crawler

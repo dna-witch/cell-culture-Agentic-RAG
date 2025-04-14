@@ -6,8 +6,7 @@ This is a RAG-enabled LLM application that acts as an expert on cell culture tec
 ## Environment Setup
 
 ```powershell
-conda 
-
+conda env create --file environment.yml
 ```
 
 ### Important Packages
@@ -16,6 +15,7 @@ conda
 * pypdf2
 * supabase
 * langchain
+* openai
 * huggingface_hub
 * streamlit
 * gradio

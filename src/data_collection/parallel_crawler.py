@@ -8,8 +8,6 @@ This script will specifically crawl the ATCC website
 using the URLs in this sitemap: https://www.atcc.org/sitemap.xml
 """
 import os
-import sys
-import psutil
 import requests
 import asyncio
 
