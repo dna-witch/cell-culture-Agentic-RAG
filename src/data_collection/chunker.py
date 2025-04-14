@@ -52,13 +52,13 @@ class ProcessedChunk:
     metadata: Dict[str, Any]
     embedding: List[float]
 
-def split_text_into_chunks(text: str, chunk_size: int = 5000, chunk_overlap: int = 100) -> List[str]:  # Default chunk size is 5000 characters
+def split_text_into_chunks(text: str, chunk_size: int = 1280, chunk_overlap: int = 100) -> List[str]:  # Default chunk size is 1280 characters
     """
     Splits the given text into chunks of specified size.
 
     Args:
         text (str): The text to be split.
-        chunk_size (int): The size of each chunk. Default is 5000 characters.
+        chunk_size (int): The size of each chunk. Default is 1280 characters, because the embedding model can only handle up to 256 words.
         chunk_overlap (int): The number of overlapping characters between chunks. Default is 100 characters.
 
     Returns:
