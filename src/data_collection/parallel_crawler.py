@@ -41,7 +41,7 @@ from langchain.chains import LLMChain
 
 from supabase import create_client, Client
 
-from chunker import ProcessedChunk, split_text_into_chunks, get_title_and_summary, create_vector_embedding, process_chunk, store_chunk_in_supabase, process_and_store_document
+from chunker import ProcessedChunk, split_text_into_chunks, create_vector_embedding, process_chunk, store_chunk_in_supabase, process_and_store_document
 
 # Initialize the Supabase client
 supabase: Client = create_client(
@@ -62,7 +62,7 @@ async def crawl_parallel(urls: List[str], max_concurrent: int = 5):
     """
     # Configure the crawler
     browser_config = BrowserConfig(
-        headless=True,  # Run in headless mode
+        headless=False,  # Run in headless mode; set to False for debugging
         browser_type='chromium',
         extra_args=["--disable-dev-shm-usage", "--no-sandbox"]
         )

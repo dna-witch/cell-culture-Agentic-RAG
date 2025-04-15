@@ -138,7 +138,8 @@ async def create_vector_embedding(text: str) -> List[float]:
                                                 model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
                                                 encode_kwargs={"normalize_embeddings": True})  # Cosine similarity works better with normalized embeddings
     
-    embedding = embedding_model.embed_documents([text])[0]
+    # embedding = embedding_model.embed_documents([text])[0]
+    embedding = embedding_model.encode(text, normalize_embeddings=True).tolist()
     
     return embedding
 
