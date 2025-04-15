@@ -26,15 +26,15 @@ from urllib.parse import urlparse
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-from langchain.embeddings import HuggingFaceEmbeddings
-from sentence_transformers import SentenceTransformer  # Remove if not used
-from langchain_community.embeddings import HuggingFaceEmbeddings  # Remove if not used
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer 
+from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain.text_splitter import MarkdownTextSplitter
 from langchain_community.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
-from xml.etree import ElementTree as ET  # Remove if not used
+from xml.etree import ElementTree as ET  
 
 from supabase import create_client, Client
 
@@ -42,7 +42,7 @@ from supabase import create_client, Client
 # These will be loaded only once to save memory and time
 model = None
 tokenizer = None
-embedding_model = SentenceTransformer('intfloat/e5-base')
+embedding_model = SentenceTransformer('intfloat/e5-base')  # Embedding dimension is 768
 
 # Initialize the Supabase client
 supabase: Client = create_client(

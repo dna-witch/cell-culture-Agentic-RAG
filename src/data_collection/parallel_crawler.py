@@ -31,17 +31,9 @@ from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, CacheMode
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
-import torch
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.text_splitter import MarkdownTextSplitter
-from langchain_community.llms import HuggingFacePipeline
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-
 from supabase import create_client, Client
 
-from chunker import ProcessedChunk, split_text_into_chunks, create_vector_embedding, process_chunk, store_chunk_in_supabase, process_and_store_document
+from chunker import process_and_store_document
 
 # Initialize the Supabase client
 supabase: Client = create_client(
