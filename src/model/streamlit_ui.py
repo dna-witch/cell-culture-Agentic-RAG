@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 import streamlit as st
-import logfire
+# import logfire
 
-from cell_culture_wizard import query_cell_culture_expert, retrieve_relevant_docs
+from cell_culture_wizard_v2 import query_cell_culture_expert, retrieve_relevant_docs
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -35,7 +35,7 @@ def add_message(role: str, content: str):
     timestamp = datetime.now().isoformat()
     message = ChatMessage(role=role, content=content, timestamp=timestamp)
     st.session_state.messages.append(message)
-    logfire.log(f"{role.capitalize()} message added", message=message)
+    # logfire.log(f"{role.capitalize()} message added", message=message)
 
     # Update chat history for RAG model
     if role in ['user', 'assistant']:
@@ -68,7 +68,7 @@ async def stream_response(query: str):
 def display_chat_history():
     """Display the chat history in the Streamlit app."""
     for message in st.session_state.messages:
-        with st.chat_message(message["role"], avatar=":person:" if message["role"]=='user' else ":robot:"):
+        with st.chat_message(message["role"]):
             st.markdown(message["content"])
             st.caption(message["timestamp"])
 
@@ -88,10 +88,10 @@ async def main():
     if user_input:
         add_message("user", user_input)
         # Display user message immediately
-        with st.chat_message("user", avatar=":person:"):
+        with st.chat_message("user"):
             st.markdown(user_input)
         # Stream the response from the RAG model
-        with st.chat_message("assistant", avatar=":robot:"):
+        with st.chat_message("assistant"):
             source_docs = await stream_response(user_input)
         # Optionally display source documents if available
         with st.expander("View Source Documents", expanded=False):

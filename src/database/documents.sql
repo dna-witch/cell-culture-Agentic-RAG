@@ -13,7 +13,7 @@ create table if not exists documents (
     embedding vector(768) not null,  -- Adjust the dimension as needed
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     unique(url, chunk_id)
-); 
+);
 
 -- Create the documents index for better search performance
 create index on documents using ivfflat (embedding vector_cosine_ops);

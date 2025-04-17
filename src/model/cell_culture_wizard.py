@@ -11,20 +11,20 @@ from typing import List, Dict, Any, Optional
 
 import os
 import asyncio
-import logfire
+# import logfire
 
 # Langchain imports
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.memory import ConversationBufferMemory
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import HuggingFaceEndpoint
+# from langchain_community.llms import HuggingFaceEndpoint
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.callbacks.base import AsyncCallbackHandler
 from langchain.schema import Document
 
 import torch
-from huggingface_hub import InferenceClient
+from huggingface_hub import InferenceClient  # Use InferenceClient for streaming
 from supabase import Client, create_client
 
 load_dotenv()  # Load environment variables from .env file
@@ -47,19 +47,43 @@ You are tasked with providing accurate and detailed information about cell cultu
 - Troubleshooting common cell culture issues
 - Best practices for handling and storing cell cultures
 
-You should provide clear, concise, and scientifically accurate responses to user queries. 
-You will be provided with a context that includes relevant information from the Cell Culture Wizard database (knowledge database). 
-Your responses should be based on the provided context and your expertise in cell culture. 
-You should also be able to handle follow-up questions and provide additional information as needed, but always grounded in the context provided or 
-additional information from documents retrieved from the knowledge database.
-You should always strive to provide the user with the most accurate and helpful information possible based on the context provided.
-
-You are not allowed to make up information or provide answers that are not supported by the context or your expertise.
-If you do not know the answer to a question, you should respond with "I don't know" or "I'm not sure" rather than guessing.
+You should provide clear, concise, and scientifically accurate responses to user queries based on provided context.
+If you do not know the answer, respond with "I don't know" or "I'm not sure." Do not hallucinate.
 You should not provide personal opinions or unverified information.
 Do not answer questions that are not related to cell culture techniques and protocols.
 """
+    
+# Helper function to initialize the embedding model
+def initialize_embedding_model():
+    """
+    Initializes the HuggingFace embedding model for vector embeddings.
+    This function is called only once to load the model into memory.
+    """
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL,
+        model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
+        encode_kwargs={"normalize_embeddings": True}  # Normalize embeddings for better cosine similarity
+    )
 
+async def create_vector_embedding(text: str) -> List[float]:
+    """
+    Asynchronously creates a vector embedding for the given text.
+    
+    Args:
+        text (str): The text to be embedded.
+
+    Returns:
+        List[float]: The vector embedding of the text.
+    """
+    embedding_model = initialize_embedding_model()
+    try:
+        embedding = embedding_model.embed_query(text)
+        return embedding
+    except Exception as e:
+        # logfire.error(f"Error creating vector embedding: {e}")
+        print(f"Error creating vector embedding: {e}")
+        return []*768  # Return a zero vector if embedding fails
+    
 class StreamingCallbackHandler(AsyncCallbackHandler):
     """
     A custom callback handler for streaming responses from the HuggingFace model.
@@ -78,61 +102,53 @@ class StreamingCallbackHandler(AsyncCallbackHandler):
         self.text += token
         if self.streaming_callback:
             await self.streaming_callback(token)
-    
-# Helper function to initialize the embedding model
-def initialize_embedding_model():
-    """
-    Initializes the HuggingFace embedding model for vector embeddings.
-    This function is called only once to load the model into memory.
-    """
-    return HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-        encode_kwargs={"normalize_embeddings": True}  # Normalize embeddings for better cosine similarity
-    )
 
-def initialize_llm(streaming: bool = False, callbacks: List = None):
+def initialize_llm():
     """
-    Initializes and returns the LLM (Large Language Model) from HuggingFace,
-    for use in the Cell Culture Wizard application.
+    Initializes the HuggingFace client so that it can be used to query the LLM model.
     """
-    model_kwargs = {
-        "max_new_tokens": 1024,
-        "temperature": 0.7,  # Adjust temperature for response variability
-        "top_p": 0.95,  # Adjust top_p for response diversity
-        "do_sample": True  # Enable sampling for more varied responses
-    }
+    # model_kwargs = {
+    #     "max_new_tokens": 1024,
+    #     "temperature": 0.7,  # Adjust temperature for response variability
+    #     "top_p": 0.95,  # Adjust top_p for response diversity
+    #     "do_sample": True  # Enable sampling for more varied responses
+    # }
 
-    streaming_callbacks = callbacks if callbacks and streaming else []
+    # streaming_callbacks = callbacks if callbacks and streaming else []
 
     # If the Endpoint URL is not set, use the default HuggingFace API endpoint
     # Option 2: Just use the InferenceClient directly
-    return HuggingFaceEndpoint(
-        endpoint_url=f"https://api-inference.huggingface.co/models/{LLM_MODEL}",  # double check the endpoint URL
-        huggingface_api_key=HUGGINGFACE_API_KEY,
-        task="text-generation",
-        model_kwargs=model_kwargs,
-        streaming=streaming,
-        callbacks=streaming_callbacks
+    # return HuggingFaceEndpoint(
+    #     endpoint_url=f"https://api-inference.huggingface.co/models/{LLM_MODEL}",  # double check the endpoint URL
+    #     huggingface_api_key=HUGGINGFACE_API_KEY,
+    #     task="text-generation",
+    #     max_new_tokens=1024,  # Adjust as needed
+    #     temperature=0.7,  # Adjust temperature for response variability
+    #     top_p=0.95,  # Adjust top_p for response diversity
+    #     do_sample=True,  # Enable sampling for more varied responses
+    #     streaming=streaming,
+    #     callbacks=callbacks or []
+    # )
+    
+    client = InferenceClient(
+        provider=PROVIDER,
+        api_key=HUGGINGFACE_API_KEY,
     )
 
-async def create_vector_embedding(text: str) -> List[float]:
-    """
-    Asynchronously creates a vector embedding for the given text.
-    
-    Args:
-        text (str): The text to be embedded.
+    # stream = client.chat.completions.create(
+    #     model="google/gemma-2-2b-it",
+    #     messages=[
+    #         {
+    #             "role": "user",
+    #             "content": "What is the capital of France?"
+    #         }
+    #     ],
+    #     max_tokens=512,
+    #     stream=True,
+    # )
 
-    Returns:
-        List[float]: The vector embedding of the text.
-    """
-    embedding_model = initialize_embedding_model()
-    try:
-        embedding = embedding_model.embed_query(text)
-        return embedding
-    except Exception as e:
-        logfire.error(f"Error creating vector embedding: {e}")
-        return []*768  # Return a zero vector if embedding fails
+    # for chunk in stream:
+    #     print(chunk.choices[0].delta.content, end="")
 
 # Function to create a Supabase client
 def initialize_supabase_client() -> Client:
@@ -212,7 +228,7 @@ async def retrieve_relevant_docs(question: str, top_k: int = 5) -> str:
         # Join all chunks with a separator
         return "\n\n---\n\n".join(formatted_chunks)
     except Exception as e:
-        logfire.error(f"Error retrieving relevant documents: {e}")
+        # logfire.error(f"Error retrieving relevant documents: {e}")
         return f"An error occurred while retrieving relevant documents: {str(e)}"
 
 def create_prompt_template():
@@ -329,7 +345,7 @@ async def query_cell_culture_expert(
 
     # Run the chain with the question
     result = await asyncio.to_thread(
-        qa_chain,
+        qa_chain.run,
         {"question": question}
     )
 
