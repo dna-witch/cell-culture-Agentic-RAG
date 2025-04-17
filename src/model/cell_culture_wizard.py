@@ -1,44 +1,43 @@
 """
 cell_culture_wizard.py
 
-This module hosts the agentic RAG (Retrieval-Augmented Generation) model 
-for the Cell Culture Wizard application.
+This module hosts the RAG (Retrieval-Augmented Generation) model 
+for the Cell Culture Wizard application using Langchain.
 """
-from __future__ import annotations as _annotations
+from __future__ import annotations
 
 from dotenv import load_dotenv
-from dataclasses import dataclass
-from typing import List
+from typing import List, Dict, Any, Optional
 
 import os
 import asyncio
-import httpx  # Remove if not used
 import logfire
 
-from pydantic_ai import Agent, ModelRetry, RunContext, AIEngine
-from huggingface_hub import InferenceClient
+# Langchain imports
+from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.chains import RetrievalQA
+from langchain.memory import ConversationBufferMemory
 from langchain_community.embeddings import HuggingFaceEmbeddings
-import torch  # Ensure PyTorch is installed for model inference
-from transformers import pipeline
-# from pydantic_ai.models.openai import OpenAIModel  # Free alternative to OpenAI??
-# from openai import AsyncOpenAI
+from langchain_community.llms import HuggingFaceEndpoint
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.callbacks.base import AsyncCallbackHandler
+from langchain.schema import Document
+
+import torch
+from huggingface_hub import InferenceClient
 from supabase import Client, create_client
 
 load_dotenv()  # Load environment variables from .env file
 
-embedding_model = os.getenv("EMBEDDING_MODEL", "Jaume/gemma-2b-embeddings")
+# Environment variables
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "Jaume/gemma-2b-embeddings")
+LLM_MODEL = os.getenv("LLM_MODEL", "google/gemma-2-2b-it")
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+PROVIDER = os.getenv("PROVIDER", "nebius")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-@dataclass
-class AgentDeps:
-    """
-    Dependencies for the Cell Culture Wizard agent.
-    Contains the Supabase client and HuggingFace inference client.
-    This allows the agent to access the database and perform inference tasks.
-    """
-    supabase: Client
-    hf_client: InferenceClient
-
-system_prompt = """You are an expert biologist specializing in cell culture techniques and protocols.
+SYSTEM_PROMPT = """You are an expert biologist specializing in cell culture techniques and protocols.
 You are tasked with providing accurate and detailed information about cell culture practices, including but not limited to:
 - Cell line maintenance and storage
 - Media preparation and supplementation
@@ -61,111 +60,248 @@ You should not provide personal opinions or unverified information.
 Do not answer questions that are not related to cell culture techniques and protocols.
 """
 
-# Define a custom model class for integration with the agent
-class HuggingFaceModel(AIEngine):
+class StreamingCallbackHandler(AsyncCallbackHandler):
     """
-    A custom model class that wraps the HuggingFace Inference API for integration with the Pydantic AI Agent.
-
-    Parameters:
-    - model (str): The model identifier for the HuggingFace model to use.
-    - provider (str): The provider for the HuggingFace model, e.g., "hf-inference".
-    - api_key (str): The API key for accessing the HuggingFace Inference API.
-    - **kwargs: Additional keyword arguments for the model configuration, to pass to the inference call.
+    A custom callback handler for streaming responses from the HuggingFace model.
+    This handler will print the response to stdout as it is generated.
     """
-    def __init__(self, model_name: str = os.getenv("LLM_MODEL", "google/gemma-2-2b-it"), provider: str = "hf-inference", api_key: str = os.getenv("HUGGINGFACE_API_KEY"), **kwargs):
+    def __init__(self):
         super().__init__()
-        self.client = InferenceClient(provider=provider, api_key=api_key)
-        self.model_name = model_name
-        self.default_kwargs = kwargs  # Store default kwargs for the model inference
-    
-    async def chat(self, messages: List[dict], **kwargs) -> str:  # List[dict] or List[str] ?
-        all_kwargs = {**self.default_kwargs, **kwargs}
-        prompt = messages[-1]  # Assuming the last message is the user query
-        
-        # Reference chat completion task documentation:
-        # https://huggingface.co/docs/inference-providers/tasks/chat-completion
-        def call_inference():
-            return self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                **all_kwargs
-            )
-        
-        response = await asyncio.to_thread(call_inference)
-        message = response.choices[0].message
-        if isinstance(message, dict):
-            return message.get("content", "")
-        return message
+        self.text = ""
+        self.streaming_callback = None
 
-# Define the agent with the HuggingFace model, system prompt, and dependencies
-cell_culture_expert = Agent(
-    HuggingFaceModel(model_name=os.getenv("LLM_MODEL"), provider="nebius"),
-    system_prompt=system_prompt,
-    deps_type=AgentDeps,
-    retries=2
-)
+    async def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
+        """
+        Called when a new token is generated by the LLM.
+        This method appends the token to the text and calls the streaming callback if set.
+        """
+        self.text += token
+        if self.streaming_callback:
+            await self.streaming_callback(token)
+    
+# Helper function to initialize the embedding model
+def initialize_embedding_model():
+    """
+    Initializes the HuggingFace embedding model for vector embeddings.
+    This function is called only once to load the model into memory.
+    """
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL,
+        model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
+        encode_kwargs={"normalize_embeddings": True}  # Normalize embeddings for better cosine similarity
+    )
+
+def initialize_llm(streaming: bool = False, callbacks: List = None):
+    """
+    Initializes and returns the LLM (Large Language Model) from HuggingFace,
+    for use in the Cell Culture Wizard application.
+    """
+    model_kwargs = {
+        "max_new_tokens": 1024,
+        "temperature": 0.7,  # Adjust temperature for response variability
+        "top_p": 0.95,  # Adjust top_p for response diversity
+        "do_sample": True  # Enable sampling for more varied responses
+    }
+
+    streaming_callbacks = callbacks if callbacks and streaming else []
+
+    # If the Endpoint URL is not set, use the default HuggingFace API endpoint
+    # Option 2: Just use the InferenceClient directly
+    return HuggingFaceEndpoint(
+        endpoint_url=f"https://api-inference.huggingface.co/models/{LLM_MODEL}",  # double check the endpoint URL
+        huggingface_api_key=HUGGINGFACE_API_KEY,
+        task="text-generation",
+        model_kwargs=model_kwargs,
+        streaming=streaming,
+        callbacks=streaming_callbacks
+    )
 
 async def create_vector_embedding(text: str) -> List[float]:
     """
-    Creates a vector embedding for the given text using
-    a model from Langchain.
-
+    Asynchronously creates a vector embedding for the given text.
+    
     Args:
         text (str): The text to be embedded.
 
     Returns:
-        List[float]: A list representing the vector embedding.
+        List[float]: The vector embedding of the text.
     """
-    # Only load the model once
-    embedding_model = HuggingFaceEmbeddings(model_name="Jaume/gemma-2b-embeddings",
-                                            model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-                                            encode_kwargs={"normalize_embeddings": True})  # Cosine similarity works better with normalized embeddings
+    embedding_model = initialize_embedding_model()
     try:
-        embedding = embedding_model.encode(text, normalize_embeddings=True).tolist()
+        embedding = embedding_model.embed_query(text)
         return embedding
     except Exception as e:
-        print(f"Error creating vector embedding: {e}")
-        return [0] * 768  # Return a zero vector if embedding fails
-    
+        logfire.error(f"Error creating vector embedding: {e}")
+        return []*768  # Return a zero vector if embedding fails
 
-# Define the tools that the Agent can use
-@cell_culture_expert.tool
-async def retrieve_relevant_docs(ctx: RunContext[AgentDeps], user_query: str) -> str:
+# Function to create a Supabase client
+def initialize_supabase_client() -> Client:
     """
-    Retrieve relevant documents from the knowledge database based on the user's query.
+    Initializes and returns a Supabase client for database operations.
+    
+    Returns:
+        Client: The initialized Supabase client.
+    """
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+# Define the Retrieval function
+async def retrieve_documents_from_supabase(query_embedding: List[float], top_k: int = 5) -> List[Document]:
+    """
+    Retrieves the top _k_ most relevant documents from Supabase based on the provided query embedding.
+    
     Args:
-        ctx (RunContext[AgentDeps]): The context containing dependencies like Supabase client.
-        user_query (str): The user's query to search for relevant documents.
+        query_embedding (List[float]): The vector embedding of the query.
+        top_k (int): The number of top documents to retrieve.
 
     Returns:
-        str: A string containing the retrieved document chunks (Top 5 Most Relevant), or an error message.
+        List[Document]: A list of retrieved documents.
     """
-    try:
-        # Get the embedding for the user query
-        query_embedding = await create_vector_embedding(user_query)
-        
-        # Query the knowledge database (Supabase) for relevant documents
-        result = ctx.deps.supabase.rpc('match_documents', 
-                                       {
-                                           'query_embedding': query_embedding,
-                                           'match_count': 5,  # Limit to top 5 most relevant documents
-                                       }  # Can add more advanced filters here if needed
-                                           ).execute()
-        if not result.data:
-            return "No relevant documents found."
-        
-        # Format the retrieved documents into a string
-        formatted_chunks = []
-        for doc in result.data:
-            chunk_text = f"""
-{doc['url']}
+    supabase_client = initialize_supabase_client()
+    
+    result = supabase_client.rpc(
+        'match_documents',
+        {
+            'query_embedding': query_embedding,
+            'match_count': top_k
+        }
+    ).execute()
 
-{doc['content']}
-"""
-            formatted_chunks.append(chunk_text)
-        # Join all chunks with a separator
-        return "\n\n---\n\n".join(formatted_chunks)
-    except Exception as e:
-        print(f"Error retrieving relevant information: {e}")
-        return f"An error occurred while retrieving relevant information: {str(e)}"
+    # Convert the Supabase result to a list of Document objects
+    documents = []
+    for item in result.data:
+        doc = Document(
+            page_content=item['content'],
+            metadata={
+                'id': item['id'],
+                'url': item['url'],
+                'chunk_id': item['chunk_id'],
+                'source': item.get('metadata', {}).get('source', 'Unknown'),
+                'similarity': item['similarity']
+            }
+        )
+        documents.append(doc)
+    return documents
+
+def create_prompt_template():
+    """
+    Create and return the prompt template for the RAG chain.
+    """
+    system_template = SYSTEM_PROMPT
+    human_template = """
+    Context information is below.
+    ---------------------
+    {context}
+    ---------------------
+    
+    Given the context information and not prior knowledge, answer the following question:
+    {question}
+    """
+    
+    system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [system_message_prompt, human_message_prompt]
+    )
+    
+    return chat_prompt
+
+class CustomRetriever:
+    """
+    Custom retriever class that uses Supabase to retrieve documents based on embeddings.
+    This class mimics the interface of a Langchain retriever while using direct Supabase queries.
+    """
+    def __init__(self, top_k: int = 5):
+        self.top_k = top_k
+        self.embedding_model = initialize_embedding_model()
+    async def get_relevant_documents(self, query: str) -> List[Document]:
+        """
+        Get relevant documents for the given query.
+
+        Args:
+            query (str): The query string to search for.
+        Returns:
+            List[Document]: A list of relevant documents.
+        """
+        query_embedding = self.embedding_model.embed_query(query)
+        documents = await retrieve_documents_from_supabase(query_embedding, top_k=self.top_k)
+        return documents
+
+async def query_cell_culture_expert(
+        question: str,
+        stream_handler=None,
+        message_history=None,
+        top_k: int = 5,
+        ) -> Dict[str, Any]:
+    """
+    Query the Cell Culture Expert with a question and return the response.
+    
+    Args:
+        question (str): The question to ask the expert.
+        stream_handler: Optional callback handler for streaming responses.
+        message_history: Optional history of messages for context.
+        top_k (int): Number of top documents to retrieve.
+
+    Returns:
+        Dict[str, Any]: The response from the expert, including the answer and relevant documents.
+    """
+    callbacks = []
+    if stream_handler:
+        streaming_callback = StreamingCallbackHandler()
+        streaming_callback.streaming_callback = stream_handler
+        callbacks.append(streaming_callback)
+    
+    # Initialize the LLM
+    llm = initialize_llm(streaming=bool(stream_handler), callbacks=callbacks)
+
+    # Initialize the retriever
+    retriever = CustomRetriever(top_k=top_k)
+
+    # Set up memory for the conversation
+    memory = None
+    if message_history:
+        memory = ConversationBufferMemory(
+            memory_key="chat_history",
+            input_key="question",
+            output_key="answer"
+        )
+
+        for i in range(0, len(message_history), 2):
+            if i + 1 < len(message_history):
+                memory.chat_memory.add_user_message(message_history[i])
+                memory.chat_memory.add_ai_message(message_history[i + 1])
+    
+    # Retrieve relevant documents
+    documents = await retriever.get_relevant_documents(question)
+
+    # Create the prompt template
+    prompt = create_prompt_template()
+
+    # Create the RetrievalQA chain
+    chain_type_kwargs = {
+        "prompt": prompt,
+        "verbose": True
+        }
+    
+    if memory:
+        chain_type_kwargs["memory"] = memory
+    
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff", # Use "stuff" chain type for simplicity
+        retriever=retriever,
+        return_source_documents=True,
+        chain_type_kwargs=chain_type_kwargs
+    )
+
+    # Run the chain with the question
+    result = await asyncio.to_thread(
+        qa_chain,
+        {"question": question}
+    )
+
+    # Prepare the response
+    return {
+        "answer": result["result"],
+        "source_documents": result["source_documents"]
+    }
