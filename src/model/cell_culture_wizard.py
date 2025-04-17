@@ -182,6 +182,39 @@ async def retrieve_documents_from_supabase(query_embedding: List[float], top_k: 
         documents.append(doc)
     return documents
 
+async def retrieve_relevant_docs(question: str, top_k: int = 5) -> str:
+    """
+    Retrieve relevant documents from the knowledge database based on the user's query.
+
+    Args:
+        question (str): The user's query to search for relevant documents.
+        top_k (int): Number of documents to retrieve.
+
+    Returns:
+        str: A string containing the retrieved document chunks, or an error message.
+    """
+    try:
+        query_embedding = await create_vector_embedding(question)
+        documents = await retrieve_documents_from_supabase(query_embedding, top_k)
+
+        if not documents:
+            return "No relevant documents found for the given query."
+
+        formatted_chunks = []
+        for doc in documents:
+            chunk_text = f"""
+{doc.metadata['url']}
+
+{doc.page_content}
+"""
+            formatted_chunks.append(chunk_text)
+        
+        # Join all chunks with a separator
+        return "\n\n---\n\n".join(formatted_chunks)
+    except Exception as e:
+        logfire.error(f"Error retrieving relevant documents: {e}")
+        return f"An error occurred while retrieving relevant documents: {str(e)}"
+
 def create_prompt_template():
     """
     Create and return the prompt template for the RAG chain.
