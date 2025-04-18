@@ -1,6 +1,23 @@
 # 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Expertise
 
-[Ask Agar logo](logo.png)
+```
+**********************************************************************************************
+*    ,---,                        ,-.           ,---,                                        *
+*   '  .' \                   ,--/ /|          '  .' \                                       *
+*  /  ;    '.               ,--. :/ |         /  ;    '.                             __  ,-. *
+* :  :       \    .--.--.   :  : ' /         :  :       \     ,----._,.            ,' ,'/ /| *
+* :  |   /\   \  /  /    '  |  '  /          :  |   /\   \   /   /  ' /   ,--.--.  '  | |' | *
+* |  :  ' ;.   :|  :  /`./  '  |  :          |  :  ' ;.   : |   :     |  /       \ |  |   ,' *
+* |  |  ;/  \   \  :  ;_    |  |   \         |  |  ;/  \   \|   | .\  . .--.  .-. |'  :  /   *
+* '  :  | \  \ ,'\  \    `. '  : |. \        '  :  | \  \ ,'.   ; ';  |  \__\/: . .|  | '    *
+* |  |  '  '--'   `----.   \|  | ' \ \       |  |  '  '--'  '   .   . |  ," .--.; |;  : |    *
+* |  :  :        /  /`--'  /'  : |--'        |  :  :         `---`-'| | /  /  ,.  ||  , ;    *
+* |  | ,'       '--'.     / ;  |,'           |  | ,'         .'__/\_: |;  :   .'   \---'     *
+* `--''           `--'---'  '--'             `--''           |   :    :|  ,     .-./         *
+*                                                             \   \  /  `--`---'             *
+*                                                              `--`-'                        *
+**********************************************************************************************
+```
 
 This project implements an intelligent Retrieval-Augmented Generation (RAG) agent designed to serve as an expert on cell culture techniques and knowledge. The agent automatically crawls relevant websites, scrapes and stores information in a vector database, and uses this knowledge to answer user queries with context-aware, accurate responses.
 
