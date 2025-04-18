@@ -17,9 +17,9 @@ import hashlib
 from dotenv import load_dotenv
 load_dotenv()
 
-__location__ = os.path.dirname(os.path.abspath(__file__))
-__base_dir__ = os.path.dirname(os.path.dirname(__location__))
-__output__ = os.path.join(__base_dir__, 'data', 'raw', 'web_crawled')
+# __location__ = os.path.dirname(os.path.abspath(__file__))
+# __base_dir__ = os.path.dirname(os.path.dirname(__location__))
+# __output__ = os.path.join(__base_dir__, 'data', 'raw', 'web_crawled')
 
 from typing import List
 from dataclasses import dataclass
@@ -58,7 +58,6 @@ async def crawl_parallel(urls: List[str], max_concurrent: int = 5):
         browser_type='chromium',
         extra_args=["--disable-dev-shm-usage", "--no-sandbox"]
         )
-
 
     run_config = CrawlerRunConfig(
         word_count_threshold=10,  # Minimum word count for content extraction

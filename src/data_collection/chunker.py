@@ -24,26 +24,30 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-import torch
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from sentence_transformers import SentenceTransformer 
-from langchain_community.embeddings import HuggingFaceEmbeddings 
+# import torch
+# from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+# from langchain_community.embeddings import HuggingFaceEmbeddings
+# from sentence_transformers import SentenceTransformer 
+# from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain.text_splitter import MarkdownTextSplitter
-from langchain_community.llms import HuggingFacePipeline
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+# from langchain_community.llms import HuggingFacePipeline
+# from langchain.prompts import PromptTemplate
+# from langchain.chains import LLMChain
+
+from openai import AsyncOpenAI
 
 from xml.etree import ElementTree as ET  
 
 from supabase import create_client, Client
 
-# Initialize global variables for models and tokenizers
-# These will be loaded only once to save memory and time
-model = None
-tokenizer = None
-embedding_model = SentenceTransformer('intfloat/e5-base')  # Embedding dimension is 768
+# # Initialize global variables for models and tokenizers
+# # These will be loaded only once to save memory and time
+# model = None
+# tokenizer = None
+# embedding_model = SentenceTransformer('intfloat/e5-base')  # Embedding dimension is 768
 
+# Initialize the OpenAI client
+openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Initialize the Supabase client
 supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
@@ -54,20 +58,20 @@ supabase: Client = create_client(
 class ProcessedChunk:
     url: str
     chunk_id: int
-    # title: str
-    # summary: str
+    title: str
+    summary: str
     content: str
     metadata: Dict[str, Any]
     embedding: List[float]
 
-def split_text_into_chunks(text: str, chunk_size: int = 1280, chunk_overlap: int = 100) -> List[str]:  # Default chunk size is 1280 characters
+def split_text_into_chunks(text: str, chunk_size: int = 5000, chunk_overlap: int = 250) -> List[str]:  # Default chunk size is 1280 characters
     """
     Splits the given text into chunks of specified size.
 
     Args:
         text (str): The text to be split.
-        chunk_size (int): The size of each chunk. Default is 1280 characters, because the embedding model can only handle up to 256 words.
-        chunk_overlap (int): The number of overlapping characters between chunks. Default is 100 characters.
+        chunk_size (int): The size of each chunk. Default is 5000 characters.
+        chunk_overlap (int): The number of overlapping characters between chunks. Default is 250 characters.
 
     Returns:
         List[str]: A list of text chunks.
@@ -78,16 +82,36 @@ def split_text_into_chunks(text: str, chunk_size: int = 1280, chunk_overlap: int
     chunks = text_splitter.split_text(text)
     return chunks
     
-# async def get_title_and_summary(chunk: str) -> Dict[str, str]:
-#     """
-#     Extracts the title and summary from the chunk.
+async def get_title_and_summary(chunk: str, url: str) -> Dict[str, str]:
+    """
+    Extracts the title and summary from the chunk.
 
-#     Args:
-#         chunk (str): The text chunk.
+    Args:
+        chunk (str): The text chunk.
+        url (str): The URL from which the chunk was extracted.
         
-#     Returns:
-#         Dict[str, str]: A dictionary containing the title and summary.
-#     """
+    Returns:
+        Dict[str, str]: A dictionary containing the title and summary.
+    """
+    system_prompt = """You are an AI assistant that extracts title and summaries from document chunks.
+    Return a JSON object with 'title' and 'summary' keys.
+    For the title: If this seems like the start of a document, extract its title. If it's a chunk from the middle of a document, derive a short and descriptive title.
+    For the summary: Summarize the main points of the text in 3-5 sentences.
+    Keep both title and summary concise yet informative.
+    """
+    try:
+        response = await openai_client.chat.completions.create(
+            model=os.getenv("LLM_MODEL"),
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"URL: {url}\n\nContent:\n{chunk[:1000]}..."}  # Limit to first 1000 characters for context
+            ],
+            response_format={"type": "json_object"}
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"Error extracting title and summary: {e}")
+        return {"title": "Error processing title", "summary": "Error processing summary"}
 #     global model, tokenizer
 #     # Only load the model and tokenizer once
 #     if model is None or tokenizer is None:
@@ -120,10 +144,32 @@ def split_text_into_chunks(text: str, chunk_size: int = 1280, chunk_overlap: int
     
 #     return {"title": title, "summary": summary}
 
+# async def create_vector_embedding(text: str) -> List[float]:
+#     """
+#     Creates a vector embedding for the given text using
+#     a model from Langchain.
+
+#     Args:
+#         text (str): The text to be embedded.
+
+#     Returns:
+#         List[float]: A list representing the vector embedding.
+#     """
+#     # Only load the model once
+#     global embedding_model
+#     if embedding_model is None:
+#         embedding_model = HuggingFaceEmbeddings(model_name="Jaume/gemma-2b-embeddings",
+#                                                 model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
+#                                                 encode_kwargs={"normalize_embeddings": True})  # Cosine similarity works better with normalized embeddings
+    
+#     # embedding = embedding_model.embed_documents([text])[0]
+#     embedding = embedding_model.encode(text, normalize_embeddings=True).tolist()
+    
+#     return embedding
+
 async def create_vector_embedding(text: str) -> List[float]:
     """
-    Creates a vector embedding for the given text using
-    a model from Langchain.
+    Creates a vector embedding for the given text using OpenAI's embeddings API.
 
     Args:
         text (str): The text to be embedded.
@@ -131,17 +177,15 @@ async def create_vector_embedding(text: str) -> List[float]:
     Returns:
         List[float]: A list representing the vector embedding.
     """
-    # Only load the model once
-    global embedding_model
-    if embedding_model is None:
-        embedding_model = HuggingFaceEmbeddings(model_name="Jaume/gemma-2b-embeddings",
-                                                model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-                                                encode_kwargs={"normalize_embeddings": True})  # Cosine similarity works better with normalized embeddings
-    
-    # embedding = embedding_model.embed_documents([text])[0]
-    embedding = embedding_model.encode(text, normalize_embeddings=True).tolist()
-    
-    return embedding
+    try:
+        response = await openai_client.embeddings.create(
+            model=os.getenv("EMBEDDING_MODEL"),
+            input=text
+        )
+        return response.data[0].embedding
+    except Exception as e:
+        print(f"Error creating vector embedding: {e}")
+        return []*1536  # Return an empty list of the expected dimension (1536 for most OpenAI models)
 
 async def process_chunk(chunk: str, chunk_id: int, url: str) -> ProcessedChunk:
     """
@@ -156,8 +200,8 @@ async def process_chunk(chunk: str, chunk_id: int, url: str) -> ProcessedChunk:
     Returns:
         ProcessedChunk: An object containing the processed chunk data.
     """
-    # # Extract title and summary
-    # title_summary = await get_title_and_summary(chunk)
+    # Extract title and summary
+    title_summary = await get_title_and_summary(chunk, url)
     
     # Create vector embedding
     embedding = await create_vector_embedding(chunk)
@@ -174,8 +218,8 @@ async def process_chunk(chunk: str, chunk_id: int, url: str) -> ProcessedChunk:
     return ProcessedChunk(
         url=url,
         chunk_id=chunk_id,
-        # title=title_summary["title"],
-        # summary=title_summary["summary"],
+        title=title_summary["title"],
+        summary=title_summary["summary"],
         content=chunk,
         metadata=metadata,
         embedding=embedding
@@ -190,8 +234,8 @@ async def store_chunk_in_supabase(chunk: ProcessedChunk) -> None:
         data = {
             "url": chunk.url,
             "chunk_id": chunk.chunk_id,
-            # "title": chunk.title,
-            # "summary": chunk.summary,
+            "title": chunk.title,
+            "summary": chunk.summary,
             "content": chunk.content,
             "metadata": chunk.metadata,
             "embedding": chunk.embedding
