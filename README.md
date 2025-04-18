@@ -1,4 +1,4 @@
-# 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Expertise
+# 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Protocols
 
 ```
 **********************************************************************************************
@@ -47,7 +47,22 @@ Now your environment should be ready to use!
 
 ### Setup `.env` File
 
-sdf
+Create a `.env` file with the following:
+
+```python
+# OpenAI API credentials
+# Will need to create an OpenAI account to generate an API key
+OPENAI_API_KEY=
+LLM_MODEL="gpt-4o-mini"  # Or your choice of model
+EMBEDDING_MODEL="text-embedding-3-small"  # Or your choice of model
+
+# Supabase credentials
+# Log in to Supabase online and create a project. 
+# The project URL and API keys are available from your project dashboard.
+SUPABASE_URL=
+SUPABASE_API_KEY=
+SUPABASE_SERVICE_KEY=
+```
 
 ### Important Packages
 
@@ -57,26 +72,30 @@ sdf
 * `openai` : Provide a strong pre-trained, instruction-tuned base Large Language Model (LLM) to use
 * `pydantic-ai` : Build an Agentic RAG system with defined dependencies and tools
 * `streamlit` : Create a beautiful chat UI to interact with the RAG agent
-<!-- * pypdf2 -->
 
 ## Data Collection and Processing
 
-<!-- * PDF processing scripts -->
-* Web crawling and scraping through Crawl4AI
+Web crawling and scraping through Crawl4AI
 * chunking and embedding generation pipeline
 * include a diagram here to show the whole pipeline
 
+To run the data collection, processing, and storage pipeline:
+
+1. Navigate to the `src/data_collection` directory.
+2. Run the following command from your terminal:
+```powershell
+python parallel_crawler.py
+```
+
 ## Database Setup
 
-* configure Supabase and store embeddings
+Please make sure that you have already created a Supabase account and a New Project. From your Project dashboard, go to the `SQL Editor` tab and paste in the SQL commands from `documents.sql`. 
+
+This will set up the `documents` table with vector storage capabilities and Row-Level Security (RLS). The SQL script also defines the `match_docs` function, which will be used to query the database for relevant documents in the RAG pipeline.
 
 ## Retrieval Mechanism
 
 * test different retrieval approaches
-
-## LLM Integration
-
-* connect the retrieval system with the language model
 
 ## Expert Chat UI
 
