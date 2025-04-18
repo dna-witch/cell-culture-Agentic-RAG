@@ -25,7 +25,7 @@ This project implements an intelligent Retrieval-Augmented Generation (RAG) agen
 
 To set up the required Python environment using Conda, follow these steps:
 
-1. Make sure you have Anaconda or Miniconda installed and available.
+1. Make sure you have `Anaconda` (or `Miniconda`) installed and added to your path.
 
 2. Clone this repository and navigate to the project directory.
 

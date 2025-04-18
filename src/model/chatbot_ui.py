@@ -99,8 +99,8 @@ async def run_agent_with_streaming(user_input: str):
 # ---------- MAIN FUNCTION ----------
 async def main():
     """Main function to run the Streamlit chat application using the RAG model."""
-    st.title("Cell Culture Wizard")
-    st.subheader("Ask the wizard your cell culture questions and get expert advice!")
+    st.title("Ask Agar!")
+    st.subheader("Ask Agar your cell culture questions and get expert advice!")
     st.markdown("This application uses an Agentic Retrieval-Augmented Generation (RAG) model to provide answers based on a knowledge base of cell culture documents.")
 
     if "messages" not in st.session_state:
