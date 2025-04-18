@@ -75,10 +75,6 @@ SUPABASE_SERVICE_KEY=
 
 ## Data Collection and Processing
 
-Web crawling and scraping through Crawl4AI
-* chunking and embedding generation pipeline
-* include a diagram here to show the whole pipeline
-
 To run the data collection, processing, and storage pipeline:
 
 1. Navigate to the `src/data_collection` directory.
@@ -87,17 +83,15 @@ To run the data collection, processing, and storage pipeline:
 python parallel_crawler.py
 ```
 
+![knowledge base diagram](img/knowledgebase.png)
+
 ## Database Setup
 
 Please make sure that you have already created a Supabase account and a New Project. From your Project dashboard, go to the `SQL Editor` tab and paste in the SQL commands from `documents.sql`. 
 
 This will set up the `documents` table with vector storage capabilities and Row-Level Security (RLS). The SQL script also defines the `match_docs` function, which will be used to query the database for relevant documents in the RAG pipeline.
 
-## Retrieval Mechanism
-
-* test different retrieval approaches
-
-## Expert Chat UI
+## Run the Agentic RAG Pipeline
 
 Run the Streamlit app using the following command:
 
@@ -107,12 +101,9 @@ streamlit run chatbot_ui.py
 
 The app will run locally at [http://localhost:8501](http://localhost:8501).
 
-* include video and screenshots to demo
-
 ## Further Testing and Optimization
 
-* hybrid search
-* agentic RAG
+If I had more time, I would have liked to explore:
 * query rewriting
 * relevance feedback
 * contextual compression
