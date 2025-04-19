@@ -2,6 +2,14 @@
 data/raw/*
 data/processed/*
 
+# Images and videos
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.avi
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
