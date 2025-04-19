@@ -22,8 +22,8 @@ create index on documents using ivfflat (embedding vector_cosine_ops);
 create index idx_documents_metadata on documents using gin (metadata);
 
 -- Create search function for documents (chunks)
-create function match_docs(
-    query_embedding vector(1536),  -- Adjust the dimension as needed for chosen embedding model
+create or replace function match_docs(
+    query_embedding vector(1536),
     match_count int default 10,
     filter jsonb DEFAULT '{}'::jsonb
 ) returns table (
@@ -37,13 +37,19 @@ create function match_docs(
     similarity float
 )
 language plpgsql as $$
-
 begin
     return query
-    -- select id, url, chunk_id, title, summary, content, metadata, 1 - (documents.embedding <=> query_embedding) as similarity
-    select documents.id, url, chunk_id, title, summary, content, metadata, 1 - (documents.embedding <=> query_embedding) as similarity
+    select 
+        documents.id,
+        documents.url,
+        documents.chunk_id,
+        documents.title,
+        documents.summary,
+        documents.content,
+        documents.metadata,
+        1 - (documents.embedding <=> query_embedding) as similarity
     from documents
-    where metadata @> filter
+    where documents.metadata @> filter
     order by documents.embedding <=> query_embedding
     limit match_count;
 end;
