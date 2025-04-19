@@ -41,7 +41,7 @@ language plpgsql as $$
 begin
     return query
     -- select id, url, chunk_id, title, summary, content, metadata, 1 - (documents.embedding <=> query_embedding) as similarity
-    select id, url, chunk_id, title, summary, content, metadata, 1 - (documents.embedding <=> query_embedding) as similarity
+    select documents.id, url, chunk_id, title, summary, content, metadata, 1 - (documents.embedding <=> query_embedding) as similarity
     from documents
     where metadata @> filter
     order by documents.embedding <=> query_embedding
