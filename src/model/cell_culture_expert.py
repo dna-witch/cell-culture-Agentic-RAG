@@ -170,7 +170,7 @@ async def get_page_content(ctx: RunContext[CellCultureAIDeps], url: str) -> str:
         result = ctx.deps.supabase.from_('documents') \
             .select('title, content, chunk_id') \
             .eq('url', url) \
-            .order('chunk_id', ascending=True) \
+            .order('chunk_id') \
             .execute()
         
         if not result.data:
