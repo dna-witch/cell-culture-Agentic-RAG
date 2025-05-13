@@ -1,5 +1,3 @@
-# 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Protocols
-
 ```
 **********************************************************************************************
 *    ,---,                        ,-.           ,---,                                        *
@@ -18,6 +16,7 @@
 *                                                              `--`-'                        *
 **********************************************************************************************
 ```
+# 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Protocols
 
 This project implements an intelligent Retrieval-Augmented Generation (RAG) agent designed to serve as an expert on cell culture techniques and knowledge. The agent automatically crawls relevant websites, scrapes and stores information in a vector database, and uses this knowledge to answer user queries with context-aware, accurate responses.
 
@@ -104,6 +103,8 @@ The app will run locally at [http://localhost:8501](http://localhost:8501).
 ## Further Testing and Optimization
 
 If I had more time, I would have liked to explore:
+* multiple agents (reviewer agent?)
+* more sophisticated tools
 * query rewriting
 * relevance feedback
 * contextual compression
