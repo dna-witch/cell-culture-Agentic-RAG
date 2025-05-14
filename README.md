@@ -20,6 +20,40 @@
 
 This project implements an intelligent Retrieval-Augmented Generation (RAG) agent designed to serve as an expert on cell culture techniques and knowledge. The agent automatically crawls relevant websites, scrapes and stores information in a vector database, and uses this knowledge to answer user queries with context-aware, accurate responses.
 
+## Demo Videos
+
+Here are some sample questions and responses from the model!
+
+<details>
+  <summary>Demo 1: What is cell culture?</summary>
+  
+  [![Demo 1](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+</details>
+
+<details>
+  <summary>Demo 2: Which cell lines are good for growing organoids, and which organoids can they grow?</summary>
+
+  [![Demo 2](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+</details>
+
+<details>
+  <summary>Demo 3: What are the pros and cons of using Caco-2 cells vs Lgr5+ stem cells?</summary>
+
+  [![Demo 3](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+</details>
+
+<details>
+  <summary>Demo 4: Generate a protocol for growing intestinal organoids from Lgr5+ cells.</summary>
+
+  [![Demo 4](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+</details>
+
+<details>
+  <summary>Demo 5: Modify the protocol to use xeno-free medium and materials. </summary>
+
+  [![Demo 5](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+</details>
+
 ## Environment Setup
 
 To set up the required Python environment using Conda, follow these steps:
