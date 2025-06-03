@@ -9,6 +9,7 @@ data/processed/*
 *.gif
 *.mp4
 *.avi
+*.pptx
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
