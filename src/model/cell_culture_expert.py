@@ -16,7 +16,7 @@ from pydantic_ai.models.openai import OpenAIModel
 from openai import AsyncOpenAI
 
 from supabase import Client
-from .multi_agent_system import MultiAgentDeps, run_multi_agent, create_vector_embedding
+from multi_agent_system import MultiAgentDeps, run_multi_agent
 
 # Load environment variables
 load_dotenv()

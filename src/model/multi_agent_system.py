@@ -34,7 +34,6 @@ from openai import AsyncOpenAI
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 
-from .cell_culture_expert import create_vector_embedding
 
 # Shared model used for all delegate agents
 model = OpenAIModel(os.getenv("LLM_MODEL"))
