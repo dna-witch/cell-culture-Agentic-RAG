@@ -60,35 +60,36 @@ There are four AI agents that cooperate to produce the final answer:
 Here are some sample questions and responses from the model!
 
 <details>
-  <summary>Demo 1: What is cell culture?</summary>
+  <summary>Design a dose–response experiment for a new anti-cancer compound in cell culture.</summary>
   
-  <!-- [![Demo 1](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID) -->
 
 </details>
 
 <details>
-  <!-- <summary>Demo 2: Which cell lines are good for growing organoids, and which organoids can they grow?</summary>
+  <summary>Troubleshoot a repeated contamination scenario.</summary>
 
-  [![Demo 2](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID) -->
+
 </details>
 
 <details>
-  <!-- <summary>Demo 3: What are the pros and cons of using Caco-2 cells vs Lgr5+ stem cells?</summary>
+  <summary>How would you calculate the volume of cell suspension needed per well and the total number of cells required?</summary>
 
-  [![Demo 3](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
-</details> -->
-
-<details>
-  <!-- <summary>Demo 4: Generate a protocol for growing intestinal organoids from Lgr5+ cells.</summary>
-
-  [![Demo 4](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
-</details> -->
+</details> 
 
 <details>
-  <!-- <summary>Demo 5: Modify the protocol to use xeno-free medium and materials. </summary>
+  <summary>Media preparation math</summary>
 
-  [![Demo 5](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID) -->
 </details>
+
+<details>
+  <summary>Create experimental plan for creating a stable cell line expressing gene X</summary>
+
+</details>
+
+<details>
+  <summary>Compare two culture models – traditional 2D monolayer vs 3D organoid culture </summary>
+
+</details> 
 
 ## Environment Setup
 

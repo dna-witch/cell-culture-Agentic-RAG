@@ -195,7 +195,7 @@ calculation_agent = Agent(
 )
 
 @calculation_agent.run
-async def run_calculation(ctx: RunContext[MultiAgentDeps], expression: str) -> str:
+async def run_calculation(ctx: RunContext[MultiAgentDeps], expression: str | None = None) -> str:
     """Evaluate a mathematical expression safely.
 
     The function attempts to parse the expression from plain text or LaTeX

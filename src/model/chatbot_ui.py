@@ -69,17 +69,18 @@ async def run_agent_with_streaming(user_input: str, calc_expr: str | None = None
 
     Args:
         user_input (str): The input from the user.
+        calc_expr (str | None): Optional calculation expression to evaluate.
     """
     deps = CellCultureAIDeps(
         supabase=supabase_client,
-        openai_client=openai_client
+        openai_client=openai_client,
+        calc_expr=calc_expr,
     )
 
     async with cell_culture_agent.run_stream(
         user_input,
-        calc_expr,
         deps=deps,
-        message_history=st.session_state.messages[:-1]
+        message_history=st.session_state.messages[:-1],
     ) as result:
         partial_text = ""
         message_placeholder = st.empty()
@@ -121,9 +122,7 @@ async def main():
             ModelRequest(parts=[UserPromptPart(content=user_input)])
         )
         if calc_input:
-            st.session_state.messages.append(
-                ModelRequest(parts=[UserPromptPart(content=f"Calculation: {calc_input}")])
-            )
+                st.markdown(f"**Calculation:** {calc_input}")
 
         with st.chat_message("user"):
             st.markdown(user_input)

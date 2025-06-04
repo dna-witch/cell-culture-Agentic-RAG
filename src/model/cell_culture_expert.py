@@ -51,6 +51,7 @@ class CellCultureAIDeps:
     """Dependencies for Cell Culture AI Agent."""
     supabase: Client
     openai_client: AsyncOpenAI
+    calc_expr: str | None = None
 
 # ---------- CREATE THE AGENT ----------
 cell_culture_agent = Agent(
@@ -65,11 +66,10 @@ cell_culture_agent = Agent(
 async def run_cell_culture_agent(
     ctx: RunContext[CellCultureAIDeps],
     user_query: str,
-    expression: str | None = None,
 ) -> str:
     """Entry point that delegates to the multi-agent system."""
     deps = MultiAgentDeps(
         supabase_clients=[ctx.deps.supabase],
         openai_client=ctx.deps.openai_client,
     )
-    return await run_multi_agent(deps, user_query, expression)
+    return await run_multi_agent(deps, user_query, ctx.deps.calc_expr)
