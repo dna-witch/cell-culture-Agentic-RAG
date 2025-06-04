@@ -63,10 +63,18 @@ Here are some sample questions and responses from the model!
   <summary>Design a dose–response experiment for a new anti-cancer compound in cell culture.</summary>
   
 
+https://github.com/user-attachments/assets/0afd6a5c-3934-4a1b-af58-d73d12ff2bcc
+
+
+
 </details>
 
 <details>
   <summary>Troubleshoot a repeated contamination scenario.</summary>
+
+
+https://github.com/user-attachments/assets/923c7dc5-f8e2-4ae5-825b-b21fd264eb3e
+
 
 
 </details>
@@ -74,20 +82,36 @@ Here are some sample questions and responses from the model!
 <details>
   <summary>How would you calculate the volume of cell suspension needed per well and the total number of cells required?</summary>
 
+
+https://github.com/user-attachments/assets/905b92ed-e037-471e-ac0a-97b48c4996e9
+
+
 </details> 
 
 <details>
   <summary>Media preparation math</summary>
+
+
+https://github.com/user-attachments/assets/41034e74-6fe8-4532-8363-a9ced14ba267
+
 
 </details>
 
 <details>
   <summary>Create experimental plan for creating a stable cell line expressing gene X</summary>
 
+
+https://github.com/user-attachments/assets/e56fb513-c86d-4ee0-b919-2f732d015112
+
+
 </details>
 
 <details>
   <summary>Compare two culture models – traditional 2D monolayer vs 3D organoid culture </summary>
+
+
+https://github.com/user-attachments/assets/48e2a531-ca43-4e3b-9ea5-c9d7062409a1
+
 
 </details> 
 
