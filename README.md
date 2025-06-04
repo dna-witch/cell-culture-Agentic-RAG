@@ -18,7 +18,42 @@
 ```
 # 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Protocols
 
-This project implements an intelligent Retrieval-Augmented Generation (RAG) agent designed to serve as an expert on cell culture techniques and knowledge. The agent automatically crawls relevant websites, scrapes and stores information in a vector database, and uses this knowledge to answer user queries with context-aware, accurate responses.
+This project implements a **multi-agent Retrieval-Augmented Generation (RAG) system** designed to provide expert advice on cell culture techniques and knowledge. The web crawler automatically finds relevant websites, scrapes and stores the information in a vector database, and the AI agents make decisions on how to use all of this knowledge to generate context-aware, accurate responses to user queries.
+
+
+```mermaid
+flowchart LR
+  subgraph Data_Ingestion
+    Crawler["parallel_crawler.py (AsyncWebCrawler)"] -->|markdown| Chunker["chunker.py"]
+    Chunker -->|"title/summaries embeddings"| Supabase["documents table"]
+  end
+
+  subgraph MultiAgent_QA
+    User["User question"] --> UI["Streamlit UI"]
+    UI --> Agent["cell_culture_agent"]
+    Agent --> Retrieval["Retrieval Agent"]
+    Retrieval --> Reasoning["Reasoning Agent"]
+    Reasoning --> Calculation["Calculation Agent"]
+    Calculation --> Planning["Planning Agent"]
+    Planning --> Answer["Final Answer"]
+    Answer --> UI
+  end
+
+  Supabase --- Retrieval
+```
+
+There are four AI agents that cooperate to produce the final answer:
+
+1. **Retrieval Agent**: This agent queries the vector database to fetch the most relevant documents based on the user's input. The agent is set up to function with multiple vector databases.
+
+2. **Reasoning Agent**: This agent consumes retrieved passages and synthesizes them with the
+  question to generate intermediate explanations.
+
+3. **Calculation Agent**: This agent handles quantitative tasks such as unit conversions or
+  statistical operations that support the reasoning process.
+
+4. **Planning Agent**: This agent orchestrates the overall workflow by deciding when to call
+  each agent and composing their outputs into the final answer.
 
 ## Demo Videos
 
