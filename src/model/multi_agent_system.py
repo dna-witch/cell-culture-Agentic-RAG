@@ -196,10 +196,31 @@ calculation_agent = Agent(
 
 @calculation_agent.run
 async def run_calculation(ctx: RunContext[MultiAgentDeps], expression: str) -> str:
-    """Evaluate a mathematical expression safely."""
+    """Evaluate a mathematical expression safely.
+
+    The function attempts to parse the expression from plain text or LaTeX
+    and returns the simplified numerical result.  If parsing fails, the
+    original error message is returned so the planning agent can handle it.
+    """
     import sympy as sp
+    from sympy.parsing.sympy_parser import parse_expr
+    expr = expression.strip()
+
+    # Remove any assignment portion like "Concentration ="
+    if "=" in expr:
+        expr = expr.split("=", 1)[1].strip()
     try:
-        result = sp.simplify(expression)
+        # Attempt to parse LaTeX if expression contains LaTeX markers
+        if "\\" in expr:
+            try:
+                from sympy.parsing.latex import parse_latex
+                sym_expr = parse_latex(expr)
+            except Exception:
+                sym_expr = parse_expr(expr, evaluate=True)
+        else:
+            sym_expr = parse_expr(expr, evaluate=True)
+
+        result = sp.N(sp.simplify(sym_expr))
         return str(result)
     except Exception as exc:
         return f"Error evaluating expression: {exc}"

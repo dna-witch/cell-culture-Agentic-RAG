@@ -62,7 +62,7 @@ def display_message_part(part):
         with st.chat_message("assistant"):
             st.markdown(part.content)
 
-async def run_agent_with_streaming(user_input: str):
+async def run_agent_with_streaming(user_input: str, calc_expr: str | None = None):
     """
     Run the agent with streaming text for the user_input prompt,
     while maintaining the entire conversation in `st.session_state.messages`.
@@ -77,6 +77,7 @@ async def run_agent_with_streaming(user_input: str):
 
     async with cell_culture_agent.run_stream(
         user_input,
+        calc_expr,
         deps=deps,
         message_history=st.session_state.messages[:-1]
     ) as result:
@@ -113,19 +114,26 @@ async def main():
 
     # Chat input for the user
     user_input = st.chat_input("What cell culture knowledge do you seek today...")
+    calc_input = st.text_input("Optional calculation expression", key="calc_expr")
 
     if user_input:
         st.session_state.messages.append(
             ModelRequest(parts=[UserPromptPart(content=user_input)])
         )
+        if calc_input:
+            st.session_state.messages.append(
+                ModelRequest(parts=[UserPromptPart(content=f"Calculation: {calc_input}")])
+            )
 
         with st.chat_message("user"):
             st.markdown(user_input)
+            if calc_input:
+                st.markdown(f"**Calculation:** {calc_input}")
         
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             message_placeholder.markdown("Thinking...")
-            await run_agent_with_streaming(user_input)
+            await run_agent_with_streaming(user_input, calc_input or None)
 
 if __name__ == "__main__":
     asyncio.run(main())

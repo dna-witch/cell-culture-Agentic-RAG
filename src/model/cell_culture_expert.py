@@ -62,10 +62,14 @@ cell_culture_agent = Agent(
 
 # ---------- MAIN RUN FUNCTION ----------
 @cell_culture_agent.run
-async def run_cell_culture_agent(ctx: RunContext[CellCultureAIDeps], user_query: str) -> str:
+async def run_cell_culture_agent(
+    ctx: RunContext[CellCultureAIDeps],
+    user_query: str,
+    expression: str | None = None,
+) -> str:
     """Entry point that delegates to the multi-agent system."""
     deps = MultiAgentDeps(
         supabase_clients=[ctx.deps.supabase],
         openai_client=ctx.deps.openai_client,
     )
-    return await run_multi_agent(deps, user_query)
+    return await run_multi_agent(deps, user_query, expression)
