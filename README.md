@@ -1,21 +1,3 @@
-```
-**********************************************************************************************
-*    ,---,                        ,-.           ,---,                                        *
-*   '  .' \                   ,--/ /|          '  .' \                                       *
-*  /  ;    '.               ,--. :/ |         /  ;    '.                             __  ,-. *
-* :  :       \    .--.--.   :  : ' /         :  :       \     ,----._,.            ,' ,'/ /| *
-* :  |   /\   \  /  /    '  |  '  /          :  |   /\   \   /   /  ' /   ,--.--.  '  | |' | *
-* |  :  ' ;.   :|  :  /`./  '  |  :          |  :  ' ;.   : |   :     |  /       \ |  |   ,' *
-* |  |  ;/  \   \  :  ;_    |  |   \         |  |  ;/  \   \|   | .\  . .--.  .-. |'  :  /   *
-* '  :  | \  \ ,'\  \    `. '  : |. \        '  :  | \  \ ,'.   ; ';  |  \__\/: . .|  | '    *
-* |  |  '  '--'   `----.   \|  | ' \ \       |  |  '  '--'  '   .   . |  ," .--.; |;  : |    *
-* |  :  :        /  /`--'  /'  : |--'        |  :  :         `---`-'| | /  /  ,.  ||  , ;    *
-* |  | ,'       '--'.     / ;  |,'           |  | ,'         .'__/\_: |;  :   .'   \---'     *
-* `--''           `--'---'  '--'             `--''           |   :    :|  ,     .-./         *
-*                                                             \   \  /  `--`---'             *
-*                                                              `--`-'                        *
-**********************************************************************************************
-```
 # 🧪 Ask Agar: An Agentic RAG Pipeline for Cell Culture Protocols
 
 This project implements a **multi-agent Retrieval-Augmented Generation (RAG) system** designed to provide expert advice on cell culture techniques and knowledge. The web crawler automatically finds relevant websites, scrapes and stores the information in a vector database, and the AI agents make decisions on how to use all of this knowledge to generate context-aware, accurate responses to user queries.
@@ -57,7 +39,7 @@ There are four AI agents that cooperate to produce the final answer:
 
 ## Demo Videos
 
-Here are some sample questions and responses from the model!
+Here are some sample questions! Click through to see videos of the high-quality responses from the Streamlit demo.
 
 <details>
   <summary>Design a dose–response experiment for a new anti-cancer compound in cell culture.</summary>
@@ -197,9 +179,25 @@ The app will run locally at [http://localhost:8501](http://localhost:8501).
 
 ## Further Testing and Optimization
 
-If I had more time, I would have liked to explore:
-* multiple agents (reviewer agent?)
-* more sophisticated tools
 * query rewriting
 * relevance feedback
 * contextual compression
+
+```
+**********************************************************************************************
+*    ,---,                        ,-.           ,---,                                        *
+*   '  .' \                   ,--/ /|          '  .' \                                       *
+*  /  ;    '.               ,--. :/ |         /  ;    '.                             __  ,-. *
+* :  :       \    .--.--.   :  : ' /         :  :       \     ,----._,.            ,' ,'/ /| *
+* :  |   /\   \  /  /    '  |  '  /          :  |   /\   \   /   /  ' /   ,--.--.  '  | |' | *
+* |  :  ' ;.   :|  :  /`./  '  |  :          |  :  ' ;.   : |   :     |  /       \ |  |   ,' *
+* |  |  ;/  \   \  :  ;_    |  |   \         |  |  ;/  \   \|   | .\  . .--.  .-. |'  :  /   *
+* '  :  | \  \ ,'\  \    `. '  : |. \        '  :  | \  \ ,'.   ; ';  |  \__\/: . .|  | '    *
+* |  |  '  '--'   `----.   \|  | ' \ \       |  |  '  '--'  '   .   . |  ," .--.; |;  : |    *
+* |  :  :        /  /`--'  /'  : |--'        |  :  :         `---`-'| | /  /  ,.  ||  , ;    *
+* |  | ,'       '--'.     / ;  |,'           |  | ,'         .'__/\_: |;  :   .'   \---'     *
+* `--''           `--'---'  '--'             `--''           |   :    :|  ,     .-./         *
+*                                                             \   \  /  `--`---'             *
+*                                                              `--`-'                        *
+**********************************************************************************************
+```
