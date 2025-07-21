@@ -24,27 +24,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-# import torch
-# from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-# from langchain_community.embeddings import HuggingFaceEmbeddings
-# from sentence_transformers import SentenceTransformer 
-# from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain.text_splitter import MarkdownTextSplitter
-# from langchain_community.llms import HuggingFacePipeline
-# from langchain.prompts import PromptTemplate
-# from langchain.chains import LLMChain
 
 from openai import AsyncOpenAI
 
 from xml.etree import ElementTree as ET  
 
 from supabase import create_client, Client
-
-# # Initialize global variables for models and tokenizers
-# # These will be loaded only once to save memory and time
-# model = None
-# tokenizer = None
-# embedding_model = SentenceTransformer('intfloat/e5-base')  # Embedding dimension is 768
 
 # Initialize the OpenAI client
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -112,60 +98,6 @@ async def get_title_and_summary(chunk: str, url: str) -> Dict[str, str]:
     except Exception as e:
         print(f"Error extracting title and summary: {e}")
         return {"title": "Error processing title", "summary": "Error processing summary"}
-#     global model, tokenizer
-#     # Only load the model and tokenizer once
-#     if model is None or tokenizer is None:
-#         model_name = "google/flan-t5-small"  # ~300MB model. If it doesn't work, try "facebook/bart-large-cnn" (~400MB)
-#         tokenizer = AutoTokenizer.from_pretrained(model_name)
-#         model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
-#     # Create the pipeline
-#     pipe = pipeline(
-#         "summarization",  # Task: text2text-generation or summarization
-#         model=model,
-#         tokenizer=tokenizer,
-#         max_length=250,
-#         device=0 if torch.cuda.is_available() else -1
-#     )
-
-#     # Title: prompt template and chain
-#     title_prompt = PromptTemplate(input_variables=["text"],
-#                                   template="If this seems like the start of a document or a chapter, extract the title. Otherwise, derive a short descriptive title. \n\n{text} \n\nTitle:")
-#     title_chain = LLMChain(llm=HuggingFacePipeline(pipeline=pipe), prompt=title_prompt)
-
-#     # Summary: prompt template and chain
-#     summary_prompt = PromptTemplate(input_variables=["text"],
-#                                     template="Summarize the main points of the following text in 3-5 sentences. \n\n{text} \n\nSummary:")
-#     summary_chain = LLMChain(llm=HuggingFacePipeline(pipeline=pipe), prompt=summary_prompt)
-
-#     # Run the chains
-#     title = await title_chain.arun(chunk)
-#     summary = await summary_chain.arun(chunk)
-    
-#     return {"title": title, "summary": summary}
-
-# async def create_vector_embedding(text: str) -> List[float]:
-#     """
-#     Creates a vector embedding for the given text using
-#     a model from Langchain.
-
-#     Args:
-#         text (str): The text to be embedded.
-
-#     Returns:
-#         List[float]: A list representing the vector embedding.
-#     """
-#     # Only load the model once
-#     global embedding_model
-#     if embedding_model is None:
-#         embedding_model = HuggingFaceEmbeddings(model_name="Jaume/gemma-2b-embeddings",
-#                                                 model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
-#                                                 encode_kwargs={"normalize_embeddings": True})  # Cosine similarity works better with normalized embeddings
-    
-#     # embedding = embedding_model.embed_documents([text])[0]
-#     embedding = embedding_model.encode(text, normalize_embeddings=True).tolist()
-    
-#     return embedding
 
 async def create_vector_embedding(text: str) -> List[float]:
     """
