@@ -26,16 +26,13 @@ flowchart LR
 
 There are four AI agents that cooperate to produce the final answer:
 
-1. **Retrieval Agent**: This agent queries the vector database to fetch the most relevant documents based on the user's input. The agent is set up to function with multiple vector databases.
+1. **Retrieval Agent**: This agent queries the vector database to fetch the most relevant documents based on the user's input. The agent is configured to work with multiple vector databases.
 
-2. **Reasoning Agent**: This agent consumes retrieved passages and synthesizes them with the
-  question to generate intermediate explanations.
+2. **Reasoning Agent**: This agent consumes retrieved passages from the Retrieval Agent along with the user's question to generate intermediate explanations.
 
-3. **Calculation Agent**: This agent handles quantitative tasks such as unit conversions or
-  statistical operations that support the reasoning process.
+3. **Calculation Agent**: This agent handles quantitative tasks such as unit conversions or statistical operations that support the reasoning process.
 
-4. **Planning Agent**: This agent orchestrates the overall workflow by deciding when to call
-  each agent and composing their outputs into the final answer.
+4. **Planning Agent**: This agent orchestrates the overall workflow by synthesizing information from each agent and composing their outputs into the final answer.
 
 ## Demo Videos
 
